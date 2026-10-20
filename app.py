@@ -126,15 +126,7 @@ def show_copy_boxes(result_df: pd.DataFrame, prefix: str):
             "Sequence and score",
             value=make_copy_text(result_df, ["sequence", "score"]),
             height=220,
-            key=f"{prefix}_seq_score",
-        )
-
-    if {"row_id", "sequence", "score"}.issubset(result_df.columns):
-        st.text_area(
-            "row_id, sequence, and score",
-            value=make_copy_text(result_df, ["row_id", "sequence", "score"]),
-            height=220,
-            key=f"{prefix}_row_seq_score",
+            key=f"{prefix}_sequence_score",
         )
 
     if {"five_ss_sequence", "five_ss_score"}.issubset(result_df.columns):
@@ -142,7 +134,7 @@ def show_copy_boxes(result_df: pd.DataFrame, prefix: str):
             "5ss sequence and score",
             value=make_copy_text(result_df, ["five_ss_sequence", "five_ss_score"]),
             height=220,
-            key=f"{prefix}_5ss",
+            key=f"{prefix}_5ss_sequence_score",
         )
 
     if {"three_ss_sequence", "three_ss_score"}.issubset(result_df.columns):
@@ -150,24 +142,23 @@ def show_copy_boxes(result_df: pd.DataFrame, prefix: str):
             "3ss sequence and score",
             value=make_copy_text(result_df, ["three_ss_sequence", "three_ss_score"]),
             height=220,
-            key=f"{prefix}_3ss",
+            key=f"{prefix}_3ss_sequence_score",
         )
 
     if {
-        "row_id",
         "five_ss_sequence",
         "five_ss_score",
         "three_ss_sequence",
         "three_ss_score",
     }.issubset(result_df.columns):
         st.text_area(
-            "Both 5ss and 3ss with row_id",
+            "Both 5ss and 3ss sequence-score pairs",
             value=make_copy_text(
                 result_df,
-                ["row_id", "five_ss_sequence", "five_ss_score", "three_ss_sequence", "three_ss_score"],
+                ["five_ss_sequence", "five_ss_score", "three_ss_sequence", "three_ss_score"],
             ),
-            height=240,
-            key=f"{prefix}_both",
+            height=260,
+            key=f"{prefix}_both_sequence_score",
         )
 
 
