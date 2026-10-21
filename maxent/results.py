@@ -12,63 +12,37 @@ def make_copy_text(df: pd.DataFrame, columns):
 
 
 def show_copy_boxes(result_df: pd.DataFrame, prefix: str):
-    st.markdown("### Copy-friendly output")
-
-    if {"sequence", "score"}.issubset(result_df.columns):
-        st.text_area(
-            "Sequence and score",
-            value=make_copy_text(result_df, ["sequence", "score"]),
-            height=220,
-            key=f"{prefix}_sequence_score",
-        )
-
-    if {"five_ss_sequence", "five_ss_score"}.issubset(result_df.columns):
-        st.text_area(
-            "5ss sequence and score",
-            value=make_copy_text(result_df, ["five_ss_sequence", "five_ss_score"]),
-            height=220,
-            key=f"{prefix}_5ss_sequence_score",
-        )
-
-    if {"three_ss_sequence", "three_ss_score"}.issubset(result_df.columns):
-        st.text_area(
-            "3ss sequence and score",
-            value=make_copy_text(result_df, ["three_ss_sequence", "three_ss_score"]),
-            height=220,
-            key=f"{prefix}_3ss_sequence_score",
-        )
-
-    if {
-        "five_ss_sequence",
-        "five_ss_score",
-        "three_ss_sequence",
-        "three_ss_score",
-    }.issubset(result_df.columns):
-        st.text_area(
+    """Show tab-separated outputs with Streamlit's built-in copy buttons."""
+    outputs = [
+        ("Sequence and score", ["sequence", "score"]),
+        ("5ss sequence and score", ["five_ss_sequence", "five_ss_score"]),
+        ("3ss sequence and score", ["three_ss_sequence", "three_ss_score"]),
+        (
             "Both 5ss and 3ss sequence-score pairs",
-            value=make_copy_text(
-                result_df,
-                ["five_ss_sequence", "five_ss_score", "three_ss_sequence", "three_ss_score"],
-            ),
-            height=260,
-            key=f"{prefix}_both_sequence_score",
-        )
+            ["five_ss_sequence", "five_ss_score", "three_ss_sequence", "three_ss_score"],
+        ),
+    ]
+    for label, columns in outputs:
+        if set(columns).issubset(result_df.columns):
+            st.caption(label)
+            st.code(make_copy_text(result_df, columns), language=None)
 
 
 def show_results(result_df: pd.DataFrame, prefix: str, file_stem: str):
     """Render the shared output controls for either input tab."""
     st.success("Done.")
     st.dataframe(result_df, use_container_width=True)
+    with st.container(horizontal=True, gap="small"):
+        st.download_button(
+            "Download results as TXT",
+            data=result_df.to_csv(sep="\t", index=False).encode("utf-8"),
+            file_name=f"{file_stem}.txt",
+            mime="text/plain",
+        )
+        st.download_button(
+            "Download results as CSV",
+            data=result_df.to_csv(index=False).encode("utf-8"),
+            file_name=f"{file_stem}.csv",
+            mime="text/csv",
+        )
     show_copy_boxes(result_df, prefix)
-    st.download_button(
-        "Download results as TXT",
-        data=result_df.to_csv(sep="\t", index=False).encode("utf-8"),
-        file_name=f"{file_stem}.txt",
-        mime="text/plain",
-    )
-    st.download_button(
-        "Download results as CSV",
-        data=result_df.to_csv(index=False).encode("utf-8"),
-        file_name=f"{file_stem}.csv",
-        mime="text/csv",
-    )

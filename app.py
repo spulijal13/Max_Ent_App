@@ -15,14 +15,22 @@ def render_sequence_tab():
     st.subheader("Run from sequences")
     st.write("Paste one sequence per line, or two columns as row_id and sequence. Headers are optional.")
 
-    seq_site_choice = st.selectbox("Choose sequence type", ["5ss", "3ss"], key="seq_site_choice")
-    seq_upload = st.file_uploader("Upload sequence file", type=["csv", "txt", "tsv"], key="seq_upload")
-    seq_paste = st.text_area(
-        "Or paste sequences here",
-        height=240,
-        key="seq_paste",
-        placeholder="Examples:\nCAGGTAAGT\nAAGGTAAGT\n\nor\n1 CAGGTAAGT\n2 AAGGTAAGT",
+    seq_site_choice = st.radio("Choose sequence type", ["5ss", "3ss"], horizontal=True, key="seq_site_choice")
+    seq_input_method = st.radio(
+        "Input method", ["Upload file", "Paste text"],
+        horizontal=True, key="seq_input_method",
     )
+    seq_upload = None
+    seq_paste = ""
+    if seq_input_method == "Upload file":
+        seq_upload = st.file_uploader("Upload sequence file", type=["csv", "txt", "tsv"], key="seq_upload")
+    else:
+        seq_paste = st.text_area(
+            "Paste sequences here",
+            height=240,
+            key="seq_paste",
+            placeholder="Examples:\nCAGGTAAGT\nAAGGTAAGT\n\nor\n1 CAGGTAAGT\n2 AAGGTAAGT",
+        )
 
     if st.button("Run from sequences", key="run_seq"):
         try:
@@ -45,9 +53,10 @@ def render_coordinate_tab():
     st.subheader("Run from raw coordinates")
     st.write("Headers are optional. If there are no headers, use the fixed column order shown below.")
 
-    coord_site_choice = st.selectbox(
+    coord_site_choice = st.radio(
         "Choose what to generate and score",
         ["5ss", "3ss", "Both"],
+        horizontal=True,
         key="coord_site_choice",
     )
 
@@ -61,13 +70,21 @@ def render_coordinate_tab():
             "or  row_id chr strand X5ss_start X5ss_end X3ss_start X3ss_end"
         )
 
-    coord_upload = st.file_uploader("Upload coordinate file", type=["csv", "txt", "tsv"], key="coord_upload")
-    coord_paste = st.text_area(
-        "Or paste coordinate rows here",
-        height=240,
-        key="coord_paste",
-        placeholder="Examples:\nchr1 + 100 108\nchr2 - 500 508",
+    coord_input_method = st.radio(
+        "Input method", ["Upload file", "Paste text"],
+        horizontal=True, key="coord_input_method",
     )
+    coord_upload = None
+    coord_paste = ""
+    if coord_input_method == "Upload file":
+        coord_upload = st.file_uploader("Upload coordinate file", type=["csv", "txt", "tsv"], key="coord_upload")
+    else:
+        coord_paste = st.text_area(
+            "Paste coordinate rows here",
+            height=240,
+            key="coord_paste",
+            placeholder="Examples:\nchr1 + 100 108\nchr2 - 500 508",
+        )
 
     if st.button("Run from coordinates", key="run_coord"):
         try:
