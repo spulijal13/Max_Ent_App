@@ -12,6 +12,14 @@ from maxent.scoring import run_coordinate_mode, run_sequence_mode, validate_requ
 
 
 def render_sequence_tab():
+    """Render sequence inputs and handle scoring and result display.
+
+    Args:
+        None.
+
+    Returns:
+        None: Updates the Streamlit page.
+    """
     st.subheader("Run from sequences")
     st.write("Paste one sequence per line, or two columns as row_id and sequence. Headers are optional.")
 
@@ -50,6 +58,14 @@ def render_sequence_tab():
 
 
 def render_coordinate_tab():
+    """Render coordinate inputs and handle extraction and scoring.
+
+    Args:
+        None.
+
+    Returns:
+        None: Updates the Streamlit page.
+    """
     st.subheader("Run from raw coordinates")
     st.write("Headers are optional. If there are no headers, use the fixed column order shown below.")
 
@@ -98,6 +114,14 @@ def render_coordinate_tab():
 
 
 def main():
+    """Configure the page, check required files, and render both tabs.
+
+    Args:
+        None.
+
+    Returns:
+        None: Updates the Streamlit page.
+    """
     st.set_page_config(page_title="MaxEnt Splice Site Tool", layout="wide")
     st.title("MaxEnt Splice Site Tool")
     validate_required_files()

@@ -6,6 +6,14 @@ import pandas as pd
 
 
 def ensure_row_id(df: pd.DataFrame) -> pd.DataFrame:
+    """Copy the input and create or coerce integer row IDs.
+
+    Args:
+        df (pd.DataFrame): Input rows with an optional row_id column.
+
+    Returns:
+        pd.DataFrame: A copy with integer row_id values.
+    """
     df = df.copy()
     if "row_id" not in df.columns:
         df = df.reset_index(drop=True)
@@ -19,6 +27,15 @@ def ensure_row_id(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def looks_like_header(first_line: str, expected_names=None):
+    """Check whether a line contains any expected header name.
+
+    Args:
+        first_line (str): First nonempty input line.
+        expected_names (list[str] | None): Header keywords to search for.
+
+    Returns:
+        bool: Whether a keyword occurs, ignoring case.
+    """
     if not first_line:
         return False
     line = first_line.strip().lower()
@@ -28,6 +45,14 @@ def looks_like_header(first_line: str, expected_names=None):
 
 
 def normalize_sequence_column(df: pd.DataFrame) -> pd.DataFrame:
+    """Identify the sequence column and trim and uppercase its values.
+
+    Args:
+        df (pd.DataFrame): Rows containing sequence or one non-row_id column.
+
+    Returns:
+        pd.DataFrame: A copy with a normalized sequence column.
+    """
     df = df.copy()
 
     if "sequence" in df.columns:
@@ -46,6 +71,14 @@ def normalize_sequence_column(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def parse_pasted_sequences(text: str) -> pd.DataFrame:
+    """Parse pasted sequence rows with optional headers and IDs.
+
+    Args:
+        text (str): Comma-, tab-, or whitespace-separated sequence rows.
+
+    Returns:
+        pd.DataFrame: Parsed sequence values and optional row_id values.
+    """
     lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
     if not lines:
         raise ValueError("No pasted sequence content found.")
@@ -72,6 +105,14 @@ def parse_pasted_sequences(text: str) -> pd.DataFrame:
 
 
 def parse_uploaded_sequences(file_bytes: bytes) -> pd.DataFrame:
+    """Decode and parse an uploaded sequence file.
+
+    Args:
+        file_bytes (bytes): UTF-8 file contents with optional headers and IDs.
+
+    Returns:
+        pd.DataFrame: Parsed file columns, or sequence and optional row_id columns.
+    """
     text = file_bytes.decode("utf-8-sig", errors="replace").strip()
     if not text:
         raise ValueError("Uploaded sequence file is empty.")
@@ -108,6 +149,16 @@ def parse_uploaded_sequences(file_bytes: bytes) -> pd.DataFrame:
 
 
 def parse_coordinate_input(uploaded_file, pasted_text, site_choice):
+    """Parse uploaded or pasted coordinates, preferring an upload if provided.
+
+    Args:
+        uploaded_file (UploadedFile | None): Streamlit upload exposing getvalue().
+        pasted_text (str | None): Coordinate text used when no upload is provided.
+        site_choice (str): "5ss", "3ss", or "Both"; determines headerless columns.
+
+    Returns:
+        pd.DataFrame: Parsed coordinates with an optional row_id column.
+    """
     if uploaded_file is not None:
         text = uploaded_file.getvalue().decode("utf-8-sig", errors="replace").strip()
     elif pasted_text and pasted_text.strip():
@@ -221,6 +272,15 @@ def parse_coordinate_input(uploaded_file, pasted_text, site_choice):
 
 
 def validate_coordinate_columns(df: pd.DataFrame, site_type: str):
+    """Check required columns and convert coordinates to numbers in place.
+
+    Args:
+        df (pd.DataFrame): Coordinate rows to validate and update.
+        site_type (str): "5ss", "3ss", or "Both".
+
+    Returns:
+        pd.DataFrame: The same dataframe with numeric coordinate columns.
+    """
     base_required = ["Chromosome.scaffold.name", "Strand"]
 
     if site_type == "5ss":

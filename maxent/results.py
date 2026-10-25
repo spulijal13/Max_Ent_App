@@ -5,6 +5,15 @@ import streamlit as st
 
 
 def make_copy_text(df: pd.DataFrame, columns):
+    """Serialize the requested available columns as tab-separated text.
+
+    Args:
+        df (pd.DataFrame): Results to serialize.
+        columns (list[str]): Column names in the desired output order.
+
+    Returns:
+        str: Text including headers, or an empty string if no columns match.
+    """
     cols = [c for c in columns if c in df.columns]
     if not cols:
         return ""
@@ -12,7 +21,15 @@ def make_copy_text(df: pd.DataFrame, columns):
 
 
 def show_copy_boxes(result_df: pd.DataFrame, prefix: str):
-    """Show tab-separated outputs with Streamlit's built-in copy buttons."""
+    """Render available sequence-score blocks with built-in copy buttons.
+
+    Args:
+        result_df (pd.DataFrame): Results containing sequence and score columns.
+        prefix (str): Legacy output identifier; currently unused.
+
+    Returns:
+        None: Adds labeled text blocks to the Streamlit page.
+    """
     outputs = [
         ("Sequence and score", ["sequence", "score"]),
         ("5ss sequence and score", ["five_ss_sequence", "five_ss_score"]),
@@ -29,7 +46,16 @@ def show_copy_boxes(result_df: pd.DataFrame, prefix: str):
 
 
 def show_results(result_df: pd.DataFrame, prefix: str, file_stem: str):
-    """Render the shared output controls for either input tab."""
+    """Render the result table, adjacent download buttons, and copy blocks.
+
+    Args:
+        result_df (pd.DataFrame): Full results to display and export.
+        prefix (str): Output identifier forwarded to show_copy_boxes.
+        file_stem (str): Download filename without the extension.
+
+    Returns:
+        None: Adds output controls to the Streamlit page.
+    """
     st.success("Done.")
     st.dataframe(result_df, use_container_width=True)
     with st.container(horizontal=True, gap="small"):
