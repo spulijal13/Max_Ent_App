@@ -41,7 +41,7 @@ def show_copy_boxes(result_df: pd.DataFrame, prefix: str):
     ]
     for label, columns in outputs:
         if set(columns).issubset(result_df.columns):
-            st.caption(label)
+            st.markdown(f"#### {label}")
             st.code(make_copy_text(result_df, columns), language=None)
 
 
@@ -56,8 +56,11 @@ def show_results(result_df: pd.DataFrame, prefix: str, file_stem: str):
     Returns:
         None: Adds output controls to the Streamlit page.
     """
-    st.success("Done.")
+    st.success(f"Scoring complete: {len(result_df)} rows.")
     st.dataframe(result_df, use_container_width=True)
+    with st.expander("Plain-text results"):
+        st.write("All result columns (tab-separated)")
+        st.code(result_df.to_csv(sep="\t", index=False), language=None)
     with st.container(horizontal=True, gap="small"):
         st.download_button(
             "Download results as TXT",

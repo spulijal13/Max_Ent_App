@@ -30,7 +30,19 @@ if (length(missing_cols) > 0) {
   stop(paste("Missing required columns:", paste(missing_cols, collapse = ", ")))
 }
 
-regions$Strand <- ifelse(regions$Strand == 1 | regions$Strand == "1", "+", "-")
+strand_values <- trimws(as.character(regions$Strand))
+if (any(is.na(strand_values) | !strand_values %in% c("+", "-", "1", "-1"))) {
+  stop("Strand must be +, -, 1, or -1.")
+}
+regions$Strand <- ifelse(strand_values %in% c("+", "1"), "+", "-")
+
+starts <- regions$X5ss_start
+ends <- regions$X5ss_end
+if (any(!is.finite(starts) | !is.finite(ends) | starts != floor(starts) |
+        ends != floor(ends) | starts < 1 | ends < starts | ends - starts + 1 != 9)) {
+  stop("5ss requires positive integer, 1-based inclusive intervals of length 9.")
+}
+
 
 gr <- GRanges(
   seqnames = regions$Chromosome.scaffold.name,
@@ -41,6 +53,13 @@ gr <- GRanges(
 genome <- BSgenome.Hsapiens.UCSC.hg38
 seqlevelsStyle(gr) <- seqlevelsStyle(genome)
 
+chromosome_lengths <- seqlengths(genome)[as.character(seqnames(gr))]
+if (any(is.na(chromosome_lengths))) {
+  stop("Unknown hg38 chromosome name in input.")
+}
+if (any(end(gr) > chromosome_lengths)) {
+  stop("Interval exceeds hg38 chromosome bounds.")
+}
 sequences <- getSeq(genome, gr)
 
 output_df <- data.frame(

@@ -177,7 +177,7 @@ def score_sequences_direct(df: pd.DataFrame, site_type: str, tmpdir: Path) -> pd
     run_perl_script(perl_script, input_txt, score_txt)
 
     score_df = read_score_file(score_txt, "sequence_scored", "score")
-    result = df.merge(score_df[["row_id", "score"]], on="row_id", how="left")
+    result = df.merge(score_df[["row_id", "score"]], on="row_id", how="left", validate="one_to_one")
 
     return result[["row_id", "sequence", "score"]]
 
@@ -210,8 +210,8 @@ def extract_and_score_from_coordinates(df: pd.DataFrame, site_type: str, tmpdir:
     seq_df = read_sequence_file(seq_txt, "sequence")
     score_df = read_score_file(score_txt, "sequence_scored", "score")
 
-    result = df.merge(seq_df, on="row_id", how="left")
-    result = result.merge(score_df[["row_id", "score"]], on="row_id", how="left")
+    result = df.merge(seq_df, on="row_id", how="left", validate="one_to_one")
+    result = result.merge(score_df[["row_id", "score"]], on="row_id", how="left", validate="one_to_one")
 
     return result
 
@@ -247,8 +247,8 @@ def run_coordinate_mode(df: pd.DataFrame, site_choice: str) -> pd.DataFrame:
             columns={"sequence": "three_ss_sequence", "score": "three_ss_score"}
         )
 
-        merged = df.merge(result5, on="row_id", how="left")
-        merged = merged.merge(result3, on="row_id", how="left")
+        merged = df.merge(result5, on="row_id", how="left", validate="one_to_one")
+        merged = merged.merge(result3, on="row_id", how="left", validate="one_to_one")
         return merged
 
 

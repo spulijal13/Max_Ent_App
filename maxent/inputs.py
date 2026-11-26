@@ -1,6 +1,8 @@
 """Parse and validate sequence and coordinate inputs."""
 
 import io
+import re
+from decimal import Decimal, InvalidOperation
 
 import pandas as pd
 
@@ -19,11 +21,36 @@ def ensure_row_id(df: pd.DataFrame) -> pd.DataFrame:
         df = df.reset_index(drop=True)
         df["row_id"] = df.index
     else:
-        df["row_id"] = pd.to_numeric(df["row_id"], errors="coerce")
-        if df["row_id"].isna().any():
-            raise ValueError("row_id column exists but contains non-numeric values.")
-        df["row_id"] = df["row_id"].astype(int)
+        df["row_id"] = integer_column(df["row_id"], "row_id")
+        if df["row_id"].duplicated().any():
+            raise ValueError("row_id values must be unique integers.")
+    if df.empty:
+        raise ValueError("Input must contain at least one row.")
     return df
+
+
+def integer_column(values, name):
+    """Parse exact finite integers without silently rounding fractional values."""
+    def parse(value):
+        try:
+            number = Decimal(str(value).strip())
+            if not number.is_finite() or number != number.to_integral_value():
+                raise ValueError
+            result = int(number)
+            if not -(2**63) <= result < 2**63:
+                raise ValueError
+            return result
+        except (InvalidOperation, ValueError, OverflowError):
+            raise ValueError(f"{name} must contain finite integers.") from None
+    return values.map(parse).astype("int64")
+
+
+def normalize_strand(value):
+    strands = {"+": "+", "1": "+", "-": "-", "-1": "-"}
+    strand = strands.get(str(value).strip())
+    if strand is None:
+        raise ValueError("Strand must be +, -, 1, or -1.")
+    return strand
 
 
 def looks_like_header(first_line: str, expected_names=None):
@@ -148,7 +175,7 @@ def parse_uploaded_sequences(file_bytes: bytes) -> pd.DataFrame:
     return pd.DataFrame(parsed, columns=["row_id", "sequence"])
 
 
-def parse_coordinate_input(uploaded_file, pasted_text, site_choice):
+def parse_coordinate_input(uploaded_file, pasted_text, site_choice, ucsc_strand=None):
     """Parse uploaded or pasted coordinates, preferring an upload if provided.
 
     Args:
@@ -169,6 +196,26 @@ def parse_coordinate_input(uploaded_file, pasted_text, site_choice):
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     if not lines:
         raise ValueError("No coordinate content found.")
+
+    # Recognize UCSC browser positions before splitting commas as delimiters.
+    if any(":" in line for line in lines):
+        if site_choice == "Both":
+            raise ValueError("UCSC positions support one site type at a time; use tabular input for Both.")
+        if ucsc_strand is None:
+            raise ValueError("Choose a strand for UCSC positions.")
+        strand = normalize_strand(ucsc_strand)
+        number = r"(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)"
+        pattern = re.compile(rf"([^\s:]+):({number})-({number})")
+        records = []
+        for line in lines:
+            match = pattern.fullmatch(line)
+            if not match:
+                raise ValueError("Use one UCSC position per line, e.g. chr12:25,368,365-25,368,373.")
+            chromosome, start, end = match.groups()
+            records.append([chromosome, strand, start.replace(",", ""), end.replace(",", "")])
+        return pd.DataFrame(records, columns=[
+            "Chromosome.scaffold.name", "Strand", f"X{site_choice}_start", f"X{site_choice}_end"
+        ])
 
     possible_headers = [
         "row_id",
@@ -207,7 +254,7 @@ def parse_coordinate_input(uploaded_file, pasted_text, site_choice):
                 parsed,
                 columns=["Chromosome.scaffold.name", "Strand", "X5ss_start", "X5ss_end"],
             )
-        elif all(len(r) >= 5 for r in parsed):
+        elif all(len(r) == 5 for r in parsed):
             df = pd.DataFrame(
                 parsed,
                 columns=["row_id", "Chromosome.scaffold.name", "Strand", "X5ss_start", "X5ss_end"],
@@ -224,7 +271,7 @@ def parse_coordinate_input(uploaded_file, pasted_text, site_choice):
                 parsed,
                 columns=["Chromosome.scaffold.name", "Strand", "X3ss_start", "X3ss_end"],
             )
-        elif all(len(r) >= 5 for r in parsed):
+        elif all(len(r) == 5 for r in parsed):
             df = pd.DataFrame(
                 parsed,
                 columns=["row_id", "Chromosome.scaffold.name", "Strand", "X3ss_start", "X3ss_end"],
@@ -248,7 +295,7 @@ def parse_coordinate_input(uploaded_file, pasted_text, site_choice):
                     "X3ss_end",
                 ],
             )
-        elif all(len(r) >= 7 for r in parsed):
+        elif all(len(r) == 7 for r in parsed):
             df = pd.DataFrame(
                 parsed,
                 columns=[
@@ -296,9 +343,20 @@ def validate_coordinate_columns(df: pd.DataFrame, site_type: str):
     if missing:
         raise ValueError("Coordinate input is missing required columns:\n" + "\n".join(missing))
 
+    df = df.copy()
+    df["Strand"] = df["Strand"].map(normalize_strand)
+    if df["Chromosome.scaffold.name"].isna().any():
+        raise ValueError("Chromosome names must not be missing.")
+    df["Chromosome.scaffold.name"] = df["Chromosome.scaffold.name"].astype(str).str.strip()
+    if df["Chromosome.scaffold.name"].eq("").any():
+        raise ValueError("Chromosome names must not be empty.")
     for col in site_required:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-        if df[col].isna().any():
-            raise ValueError(f"Column {col} contains missing or non-numeric values.")
-
+        df[col] = integer_column(df[col], col)
+    for site in (["5ss", "3ss"] if site_type == "Both" else [site_type]):
+        start, end = df[f"X{site}_start"], df[f"X{site}_end"]
+        if (start < 1).any() or (end < start).any():
+            raise ValueError(f"{site} requires 1-based coordinates with 1 <= start <= end.")
+        length = 9 if site == "5ss" else 23
+        if (end - start + 1 != length).any():
+            raise ValueError(f"Expected interval length {length} for {site} (end - start + 1).")
     return df
